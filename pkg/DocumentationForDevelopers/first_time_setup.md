@@ -26,6 +26,7 @@ We try to keep a current list of all the packages used in REDCapR in the file `/
 This document is mostly from memory, except for the qpdf which was a waste of 10 minutes of re-googling.  There's probably other stuff I've forgotten, that would cost time.  If so, please tell me and I'll add it here.
 
 ### SVN
+*Ignore this section.  It didn't work out like I had hoped.  I couldn't get SVN to ignore directories. Maybe it involved conflicts between Git, and holding locks or something.*
 If you're going to be submitting to R-Forge, you can use TortoiseSVN or the [SVN feature in RStudio](http://www.rstudio.com/ide/docs/version_control/overview). The RStudio Suggests [SilkSVN](http://www.sliksvn.com/en/download).  SVN ignores files differently than Git.  Open a command window in the appropriate directory, and [type](http://stackoverflow.com/questions/116074/how-to-ignore-a-directory-with-svn
 ```
 svn propset svn:ignore .git .

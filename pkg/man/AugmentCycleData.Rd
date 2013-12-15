@@ -2,28 +2,30 @@
 \alias{AugmentCycleData}
 \alias{AugmentYearDataWithMonthResolution}
 \alias{AugmentYearDataWithSecondResolution}
-\title{Shows the interrupted time series in Cartesian coordinates}
+\title{Calculates variables necessary for WATS Plots}
 \usage{
-AugmentYearDataWithMonthResolution(ds, dateName)
+AugmentYearDataWithMonthResolution(dsLinear, dateName, stageIDName)
 }
 \arguments{
-  \item{ds}{The \code{data.frame} to containing the
+  \item{dsLinear}{The \code{data.frame} to containing the
   detailed data.}
 
-  \item{dateName}{The variable name in \code{ds} containing
-  the date or datetime value.}
+  \item{dateName}{The variable name in \code{dsLinear}
+  containing the date or datetime value.}
+
+  \item{stageIDName}{The variable name indicating the
+  stage. In a typical interrupted time series, these values
+  are \code{1} before the interruption and \code{2} after.}
 }
 \value{
-Returns a \code{data.frame} with two additional variables:
-\code{CycleIndex} and \code{ProportionThroughCycle}.
+Returns a \code{data.frame} with additional variables:
+\code{CycleTally}, \code{ProportionThroughCycle},
+\code{ProportionID}, and \code{TerminalPointInCycle}.
 }
 \description{
-Shows the interrupted time series in Cartesian coordinates.
+Calculates variables necessary for WATS Plots
 }
 \examples{
 a <- 32+323
-}
-\author{
-Will Beasley
 }
 
