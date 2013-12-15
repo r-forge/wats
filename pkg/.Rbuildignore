@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+.gitignore
+
+WatsDocumentationPeek.pdf
+Datasets/
+DocumentationForDevelopers/
+Playgrounds/
+PublicationGraphs/
+UtilityScripts/
