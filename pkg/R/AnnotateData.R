@@ -11,6 +11,7 @@
 ##' @param spreadFunction A function to calculate the bands of a subsample.
 ##' @param cycleTallyName The variable name indicating how many cycles have been completed.
 ##' @param stageIDName The variable name indicating the stage. In a typical interrupted time series, these values are \code{1} before the interruption and \code{2} after.
+##' @param stageProgressName The variable name indicating the stage in a decimal form.  This is mostly for internal uses.
 ##' @param proportionThroughCycleName The variable name indicating how far the point is through a cycle.  For example, 0 degrees would be \code{0}, 180 degrees would be \code{0.5}, 359 degrees would be \code{0.9972}, and 360 degrees would be \code{0}.
 ##' @param proportionIDName The variable name indicating the ordinal position through a cycle.  
 ##' @param terminalPointInCycleName The variable name indicating the last point within a given cycle.
@@ -24,14 +25,15 @@ AnnotateData <- function( dsLinear,
                           spreadFunction,
                           cycleTallyName="CycleTally", 
                           stageIDName="StageID", 
+                          stageProgressName="StageProgress",
                           proportionThroughCycleName="ProportionThroughCycle",
                           proportionIDName="ProportionID",
                           terminalPointInCycleName="TerminalPointInCycle" ) {
   
   pointsInCycle <- max(dsLinear[, proportionIDName])
   testit::assert("The should be at least one point in a cycle", max(pointsInCycle)>=1)
-  dsLinear$DV <- dsLinear[, dvName]
-  z <- zoo::zooreg(data=dsLinear$DV, frequency=pointsInCycle)
+  
+  z <- zoo::zooreg(data=dsLinear[, dvName], frequency=pointsInCycle)
   rollingBounds <- zoo::rollapply(data=z, width=pointsInCycle, FUN=spreadFunction)
   
   dsLinear$RollingLower <- NA
@@ -43,19 +45,27 @@ AnnotateData <- function( dsLinear,
   
   
   summarizePosition <- function( df ) {
-    positionBounds <- spreadFunction(df$DV)
+    positionBounds <- spreadFunction(df[, dvName])
     #   print(positionBounds)
     data.frame(    
       PositionLower=positionBounds[1],
-      PositionCenter=median(df$DV),
+      PositionCenter=median(df[, dvName]),
       PositionUpper=positionBounds[2]
     )
   }
-  dsPositional <- plyr::ddply(dsLinear, .variables=c("StageID", "ProportionID"), .fun=summarizePosition)
+  dsPositional <- plyr::ddply(dsLinear, .variables=c(stageIDName, proportionIDName), .fun=summarizePosition)
   
+  dsLinearTemp <- dsLinear[, c("Date", stageIDName, proportionIDName, stageProgressName)]
+  colnames(dsLinearTemp)[colnames(dsLinearTemp)==stageIDName] <- "StageIDTime" #Make sure `StageIDTime` matches the two calls below.
   
-  dsLinear$DV <- NULL
-  return( list(dsLinear=dsLinear, dsPositional=dsPositional) )
+  dsPositionalTemp <- dsPositional
+  colnames(dsPositionalTemp)[colnames(dsPositionalTemp)==stageIDName] <- "StageIDBand" #Make sure `StageIDBand` matches the calls below.
+  
+  dsPeriodic <- merge(x=dsLinearTemp, y=dsPositionalTemp, by=c(proportionIDName), all.x=TRUE, all.y=TRUE)
+  dsPeriodic <- dsPeriodic[order(dsPeriodic[, "Date"], dsPeriodic[, "StageIDTime"], dsPeriodic[, "StageIDBand"]), ]
+#   dsPeriodic$Focus <- (dsPeriodic$StageIDTime == dsPeriodic$StageIDBand)
+  
+  return( list(dsLinear=dsLinear, dsPositional=dsPositional, dsPeriodic=dsPeriodic) )
 }
 
 # dsLinear <- read.table(file="./inst/extdata/BirthRatesOk.txt", header=TRUE, sep="\t", stringsAsFactors=F)
@@ -67,17 +77,37 @@ AnnotateData <- function( dsLinear,
 # 
 # 
 # hSpread <- function( scores) { return( quantile(x=scores, probs=c(.25, .75)) ) }
-# dsCombined <- AnnotateData(dsLinear, dvName="BirthRate",centerFunction=median, spreadFunction=hSpread)
-# sapply(dsCombined, head, 20)
+# portfolio <- AnnotateData(dsLinear, dvName="BirthRate", centerFunction=median, spreadFunction=hSpread)
+
+
+# sapply(Portfolio, tail, n=10L)
+# head(Portfolio$dsLinear, 10L)
+# Portfolio$dsPositional
+# 
+# dsLinearTemp <- Portfolio$dsLinear[, c("Date", "StageID", "ProportionID", "StageProgress")]
+# colnames(dsLinearTemp)[colnames(dsLinearTemp)=="StageID"] <- "StageIDTime"
+# 
+# dsPositionalTemp <- Portfolio$dsPositional
+# colnames(dsPositionalTemp)[colnames(dsPositionalTemp)=="StageID"] <- "StageIDBand"
+# 
+# dsJ <- merge(x=dsLinearTemp, y=dsPositionalTemp, by=c("ProportionID"), all.x=TRUE, all.y=TRUE)
+# dsJ <- dsJ[order(dsJ[, "Date"], dsJ[, "StageIDTime"], dsJ[, "StageIDBand"]), ]
+# dsJ$Focus <- (dsJ$StageIDTime == dsJ$StageIDBand)
+
+
 
 # dsLinear$DV <- dsLinear$BirthRate
-
-
-# (z <- zoo::zooreg(data=dsLinear$BirthRate, frequency=12))
 # 
-# 
-# summary(z)
-# cycle(z)
-# index(z)
-# is.regular(z)
+# stages <- sort(unique(dsLinear$StageID))
+# stageCount <- length(stages)
+# listOfDs <- vector("list", stageCount)
+# for( i in seq_along(stages) ){
+# #   stage <- 
+#   dsStage <- dsLinear
+#   dsStage$InFocus <- (dsStage$StageID==stages[i])
+#   listOfDs[[i]] <- dsStage  
+# }
+
+# dsPeriodicStack <- data.frame(do.call(plyr::rbind.fill, listOfDs), stringsAsFactors=FALSE)
+
 

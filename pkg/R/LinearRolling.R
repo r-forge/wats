@@ -5,7 +5,7 @@
 ##' 
 ##' @description Shows the interrupted time series in Cartesian coordinates without a periodic/cyclic components.
 ##' 
-##' @param dsLinear The \code{data.frame} to cotaining the data.
+##' @param dsLinear The \code{data.frame} to containing the data.
 ##' @param xName The variable name containing the date.
 ##' @param yName The variable name containing the dependent/criterion variable.
 ##' @param stageIDName The variable name indicating which stage the record belongs to.  For example, before the first interruption, the \code{StageID} is \code{1}, and is \code{2} afterwards.
@@ -14,19 +14,19 @@
 ##' @param rollingUpperName The variable name showing the upper bound of the rolling estimate.
 ##' @param paletteDark A vector of colors used for the dark/heavy graphical elements.  The vector should have one color for each \code{StageID} value.  If no vector is specified, a default will be chosen, based on the number of stages.
 ##' @param paletteLight A vector of colors used for the light graphical elements.  The vector should have one color for each \code{StageID} value.  If no vector is specified, a default will be chosen, based on the number of stages.
-##' @param colorPeriodic The color of the `slowest' trend line, which plots only one value per cycle. 
+##' @param colorSparse The color of the `slowest' trend line, which plots only one value per cycle. 
 ##' @param changePoints A vector of values indicate the interruptions between stages.  It typically works best as a \code{Date} or a \code{POSIXct} class.
 ##' @param changePointLabels The text plotted above each interruption.
 ##' @param drawJaggedLine A boolean value indicating if a line should be plotted that connects the observed data points.
 ##' @param drawRollingLine A boolean value indicating if a line should be plotted that connects the rolling estimates specified by \code{rollingCenterName}.
 ##' @param drawRollingBands A boolean value indicating if a band should be plotted that envelopes the rolling estimates (whose values are take from the \code{rollingLowerName} and \code{rollingUpperName}.
-##' @param drawPeriodicLineAndPoints A boolean value indicating if the periodic line and points should be plotted.
+##' @param drawSparseLineAndPoints A boolean value indicating if the sparse line and points should be plotted.
 ##' 
 ##' @param jaggedPointSize The size of the observed data points.
 ##' @param jaggedLineSize The size of the line connecting the observed data points.
 ##' @param rollingLineSize The size of the line connecting the rolling estimates.
-##' @param periodicPointSize The size of the periodic estimates.
-##' @param periodicLineSize The size of the line connecting the periodic estimates.
+##' @param sparsePointSize The size of the sparse estimates.
+##' @param sparseLineSize The size of the line connecting the sparse estimates.
 ##' 
 ##' @param bandAlpha The amount of transparency of the rolling estimate band.
 ##' @param changeLineAlpha The amount of transparency marking each interruption.
@@ -39,15 +39,16 @@
 ##' @return Returns a \code{ggplot2} graphing object
 ##' @keywords linear
 ##' @examples
+##' require(Wats) #Load the package
 ##' filePathOutcomes <- file.path(devtools::inst(name="Wats"), "extdata", "BirthRatesOk.txt")
 ##' dsLinear <- read.table(filePathOutcomes, header=TRUE, sep="\t", stringsAsFactors=FALSE)
 ##' dsLinear$Date <- as.Date(dsLinear$Date) 
 ##' dsLinear$MonthID <- NULL
 ##' changeMonth <- as.Date("1996-02-15")
-##' dsLinear$StageID <- ifelse(dsLinear$Date < as.Date("1996-02-15"), 1L, 2L)
-##' dsLinear <- Wats::AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
-##' hSpread <- function( scores) { return( quantile(x=scores, probs=c(.25, .75)) ) }
-##' dsCombined <- Wats::AnnotateData(
+##' dsLinear$StageID <- ifelse(dsLinear$Date < changeMonth, 1L, 2L)
+##' dsLinear <- AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
+##' hSpread <- function( scores ) { return( quantile(x=scores, probs=c(.25, .75)) ) }
+##' portfolio <- AnnotateData(
 ##'     dsLinear, 
 ##'     dvName = "BirthRate",
 ##'     centerFunction = median, 
@@ -55,20 +56,21 @@
 ##' )
 ##' 
 ##' LinearRollingPlot(
-##'     dsCombined$dsLinear,
+##'     portfolio$dsLinear,
 ##'     xName = "Date", 
 ##'     yName = "BirthRate",
 ##'     stageIDName = "StageID", 
-##'     changePoints = as.Date("1996-02-15"), 
-##'     changePointLabels = "Bombing Effect")
-##' 
+##'     changePoints = changeMonth, 
+##'     changePointLabels = "Bombing Effect"
+##' )
+
 LinearRollingPlot <- function(dsLinear, xName, yName, stageIDName, 
                               rollingLowerName="RollingLower", rollingCenterName="RollingCenter", rollingUpperName="RollingUpper",
-                              paletteDark=NULL, paletteLight=NULL, colorPeriodic="brown",
+                              paletteDark=NULL, paletteLight=NULL, colorSparse=grDevices::adjustcolor("tan1", .5),
                               changePoints=NULL, changePointLabels=NULL,
-                              drawJaggedLine=TRUE, drawRollingLine=TRUE, drawRollingBands=TRUE, drawPeriodicLineAndPoints=TRUE, 
-                              jaggedPointSize=4, jaggedLineSize=.5, rollingLineSize=1, periodicPointSize=4, periodicLineSize=.5,
-                              bandAlpha=.3, changeLineAlpha=.5, changeLineSize=5,
+                              drawJaggedLine=TRUE, drawRollingLine=TRUE, drawRollingBands=TRUE, drawSparseLineAndPoints=TRUE, 
+                              jaggedPointSize=2, jaggedLineSize=.5, rollingLineSize=1, sparsePointSize=4, sparseLineSize=.5,
+                              bandAlpha=.4, changeLineAlpha=.5, changeLineSize=3,
                               title=NULL, xTitle=NULL, yTitle=NULL ) {
   
   stages <- sort(unique(dsLinear[, stageIDName]))
@@ -90,26 +92,27 @@ LinearRollingPlot <- function(dsLinear, xName, yName, stageIDName,
   }  
     
   for( stage in stages) {
-    dsStage <- dsLinear[stage<=dsLinear$StageProgress & dsLinear$StageProgress<=(stage+1),]
+    dsStage <- dsLinear[stage<=dsLinear$StageProgress & dsLinear$StageProgress<=(stage+1), ]
+    
     if( drawJaggedLine )
-      p <- p + ggplot2::geom_line(size=jaggedLineSize, color=paletteLight[stage], data=dsStage)
+      p <- p + ggplot2::geom_line(size=jaggedLineSize, color=paletteDark[stage], data=dsStage)
     if( drawRollingLine )
       p <- p + ggplot2::geom_line(ggplot2::aes_string(y=rollingCenterName), data=dsStage, size=rollingLineSize, color=paletteLight[stage], na.rm=T)
     if( drawRollingBands )
-      p <- p + ggplot2::geom_ribbon(ggplot2::aes_string(ymin=rollingLowerName, ymax=rollingUpperName), data=dsStage, fill=paletteLight[stage], color=NA, alpha=bandAlpha)
+      p <- p + ggplot2::geom_ribbon(ggplot2::aes_string(ymin=rollingLowerName, ymax=rollingUpperName), data=dsStage, fill=paletteLight[stage], color=NA, alpha=bandAlpha, na.rm=T)
     
     p <- p + ggplot2::geom_point(shape=1, color=paletteLight[stage], data=dsStage, size=jaggedPointSize)
   }
   
-  if( drawPeriodicLineAndPoints ) {
-    p <- p + ggplot2::geom_line(data=dsLinear[dsLinear$TerminalPointInCycle,], ggplot2::aes_string(y=rollingCenterName), size=periodicLineSize, color=colorPeriodic)
-    p <- p + ggplot2::geom_point(data=dsLinear[dsLinear$TerminalPointInCycle,], ggplot2::aes_string(y=rollingCenterName), size=periodicPointSize, shape=3, color=colorPeriodic)
+  if( drawSparseLineAndPoints ) {
+    p <- p + ggplot2::geom_line(data=dsLinear[dsLinear$TerminalPointInCycle,], ggplot2::aes_string(y=rollingCenterName), size=sparseLineSize, color=colorSparse)
+    p <- p + ggplot2::geom_point(data=dsLinear[dsLinear$TerminalPointInCycle,], ggplot2::aes_string(y=rollingCenterName), size=sparsePointSize, shape=3, color=colorSparse)
   }  
   
   if( !is.null(changePoints) ) {
     for( i in seq_along(changePoints) )  {
       p <- p + ggplot2::geom_vline(x=as.integer(changePoints[i]), color=paletteLight[i+1], alpha=changeLineAlpha, size=changeLineSize)
-      p <- p + ggplot2::annotate("text", x=changePoints[i], y=max(dsLinear[, yName]), color=paletteDark[i+1], label=changePointLabels[i])
+      p <- p + ggplot2::annotate("text", x=changePoints[i], y=Inf, vjust=1.1, color=paletteLight[i+1], label=changePointLabels[i])
     }
   }
 
@@ -119,20 +122,3 @@ LinearRollingPlot <- function(dsLinear, xName, yName, stageIDName,
   
   return( p )
 }
-
-
-# dsLinear <- read.table(file="./inst/extdata/BirthRatesOk.txt", header=TRUE, sep="\t", stringsAsFactors=F)
-# dsLinear$Date <- as.Date(dsLinear$Date) 
-# dsLinear$MonthID <- NULL
-# changeMonth <- as.Date("1996-02-15")
-# dsLinear$StageID <- ifelse(dsLinear$Date < as.Date("1996-02-15"), 1L, 2L)
-# dsLinear <- Wats::AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
-# 
-# hSpread <- function( scores) { return( quantile(x=scores, probs=c(.25, .75)) ) }
-# dsCombined <- Wats::AnnotateData(dsLinear, dvName="BirthRate",centerFunction=median, spreadFunction=hSpread)
-# # sapply(dsCombined, head, 20)
-# 
-# LinearRollingPlot(dsCombined$dsLinear, xName="Date", yName="BirthRate", stageIDName="StageID", 
-#                   changePoints=as.Date("1996-02-15"), changePointLabels="Bombing Effect")
-# 
-# 
