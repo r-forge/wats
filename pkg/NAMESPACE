@@ -1,3 +1,4 @@
 export(AnnotateData)
 export(AugmentYearDataWithMonthResolution)
 export(AugmentYearDataWithSecondResolution)
+export(LinearRollingPlot)
