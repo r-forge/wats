@@ -2,11 +2,12 @@ rm(list=ls(all=TRUE))
 require(devtools)
 options(device = "windows") #http://support.rstudio.org/help/discussions/problems/80-error-in-function-only-one-rstudio-graphics-device-is-permitted
 
+devtools::document()
 devtools::check_doc() #Should return NULL
 #  system("R CMD Rd2pdf --force --output=./WatsDocumentationPeek.pdf ." )
 
 devtools::run_examples(); dev.off() #This overwrites the NAMESPACE file too
-# devtools::run_examples(, "LinearRollingPlot.Rd")
+# devtools::run_examples(, "CartesianRolling.Rd")
 test_results <- devtools::test()
 devtools::clean_vignettes()
 devtools::build_vignettes()
