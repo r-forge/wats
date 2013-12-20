@@ -1,25 +1,30 @@
-\name{CartesianPeriodic}
-\alias{CartesianPeriodic}
-\title{Linear Plot with Periodic Elements}
+\name{PolarPeriodic}
+\alias{PolarPeriodic}
+\title{Polar Plot with Periodic Elements}
 \usage{
-CartesianPeriodic(dsLinear, dsPeriodic, xName, yName, stageIDName,
+PolarPeriodic(dsLinear, dsStageCyclePolar, xName, yName, stageIDName,
   periodicLowerName = "PositionLower", periodicUpperName = "PositionUpper",
   paletteDark = NULL, paletteLight = NULL, changePoints = NULL,
-  changePointLabels = NULL, drawPeriodicBand = TRUE, jaggedPointSize = 2,
-  jaggedLineSize = 0.5, bandAlphaDark = 0.4, bandAlphaLight = 0.15,
-  changeLineAlpha = 0.5, changeLineSize = 3, title = NULL,
-  xTitle = NULL, yTitle = NULL)
+  changePointLabels = NULL, drawObservedLine = TRUE,
+  drawPeriodicBand = TRUE, jaggedPointSize = 2, jaggedLineSize = 0.5,
+  bandAlphaDark = 0.4, bandAlphaLight = 0.15, colorLabels = "gray50",
+  colorGridlines = "gray80", changeLineAlpha = 0.5, changeLineSize = 3,
+  tickLocations = base::pretty(x = dsLinear[, yName]),
+  graphFloor = min(tickLocations), graphCeiling = max(tickLocations),
+  cardinalLabels = NULL,
+  originLabel = paste("A point at the origin represents a value of",
+  graphFloor))
 }
 \arguments{
   \item{dsLinear}{The \code{data.frame} to containing the
   simple linear data.  There should be one record per
   observation.}
 
-  \item{dsPeriodic}{The \code{data.frame} to containing the
-  reoccurring/periodic bands.  There should be one record
-  per observation per stage.  If there are three stages,
-  this \code{data.frame} should have three times as many
-  rows as \code{dsLinear}.}
+  \item{dsStageCyclePolar}{The \code{data.frame} to
+  containing the bands for a single period.  There should
+  be one record per theta per stage.  If there are three
+  stages, this \code{data.frame} should have three times as
+  many rows as \code{dsLinear}.}
 
   \item{xName}{The variable name containing the date.}
 
@@ -29,10 +34,10 @@ CartesianPeriodic(dsLinear, dsPeriodic, xName, yName, stageIDName,
   \item{stageIDName}{The variable name indicating which
   stage the record belongs to.  For example, before the
   first interruption, the \code{StageID} is \code{1}, and
-  is \code{2} afterwards.}
+  is \code{2} afterwards. #}
 
   \item{periodicLowerName}{The variable name showing the
-  lower bound of a stage's periodic estimate.}
+  lower bound of a stage's periodic estimate. #}
 
   \item{periodicUpperName}{The variable name showing the
   upper bound of a stage's periodic estimate.}
@@ -55,9 +60,14 @@ CartesianPeriodic(dsLinear, dsPeriodic, xName, yName, stageIDName,
   \item{changePointLabels}{The text plotted above each
   interruption.}
 
+  \item{drawObservedLine}{A boolean value indicating if the
+  longitudinal observed line should be plotted (whose
+  values are take from \code{dsLinear}.}
+
   \item{drawPeriodicBand}{A boolean value indicating if the
   bands should be plotted (whose values are take from the
-  \code{periodicLowerName} and \code{periodicUpperName}.}
+  \code{periodicLowerName} and \code{periodicUpperName}
+  fields.}
 
   \item{jaggedPointSize}{The size of the observed data
   points.}
@@ -74,48 +84,40 @@ CartesianPeriodic(dsLinear, dsPeriodic, xName, yName, stageIDName,
   \item{changeLineAlpha}{The amount of transparency marking
   each interruption.}
 
+  \item{colorLabels}{The color for \code{cardinalLabels}
+  and \code{originLabel}.}
+
+  \item{colorGridlines}{The color for the gridlines.}
+
   \item{changeLineSize}{The width of a line marking an
   interruption.}
 
-  \item{title}{The string describing the plot.}
+  \item{tickLocations}{The desired locations for ticks
+  showing the value of the criterion/dependent variable.}
 
-  \item{xTitle}{The string describing the \emph{x}-axis.}
+  \item{graphFloor}{The value of the criterion/dependent
+  variable at the center of the polar plot.}
 
-  \item{yTitle}{The string describing the \emph{y}-axis.}
+  \item{graphCeiling}{The value of the criterion/dependent
+  variable at the outside of the polar plot.}
+
+  \item{cardinalLabels}{The four labels placed where
+  `North', `East', `South', and `West' typically are.}
+
+  \item{originLabel}{Explains what the criterion variable's
+  value is at the origin.  Use \code{NULL} if no
+  explanation is desired.}
 }
 \value{
-Returns a \code{ggplot2} graphing object
+Returns a \code{grid} graphical object (ie, a
+\href{http://stat.ethz.ch/R-manual/R-devel/library/grid/html/grid.grob.html}{\code{grob}}.)
 }
 \description{
 Shows the interrupted time series in Cartesian coordinates
 and its a periodic/cyclic components.
 }
 \examples{
-require(Wats) #Load the package
-filePathOutcomes <- file.path(devtools::inst(name="Wats"), "extdata", "BirthRatesOk.txt")
-dsLinear <- read.table(filePathOutcomes, header=TRUE, sep="\\t", stringsAsFactors=FALSE)
-dsLinear$Date <- as.Date(dsLinear$Date)
-dsLinear$MonthID <- NULL
-changeMonth <- as.Date("1996-02-15")
-dsLinear$StageID <- ifelse(dsLinear$Date < changeMonth, 1L, 2L)
-dsLinear <- AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
-hSpread <- function( scores ) { return( quantile(x=scores, probs=c(.25, .75)) ) }
-portfolio <- AnnotateData(
-    dsLinear,
-    dvName = "BirthRate",
-    centerFunction = median,
-    spreadFunction = hSpread
-)
-
-CartesianPeriodic(
-  portfolio$dsLinear,
-  portfolio$dsPeriodic,
-  xName = "Date",
-  yName = "BirthRate",
-  stageIDName = "StageID",
-  changePoints = changeMonth,
-  changePointLabels = "Bombing Effect"
-)
+32+7854
 }
-\keyword{Cartesian}
+\keyword{polar}
 

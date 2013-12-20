@@ -27,8 +27,8 @@
 ##' @param changeLineSize The width of a line marking an interruption.
 ##' 
 ##' @param title The string describing the plot.
-##' @param xTitle TThe string describing the \emph{x}-axis.
-##' @param yTitle TThe string describing the \emph{y}-axis. 
+##' @param xTitle The string describing the \emph{x}-axis.
+##' @param yTitle The string describing the \emph{y}-axis. 
 ##' 
 ##' @return Returns a \code{ggplot2} graphing object
 ##' @keywords Cartesian
@@ -72,7 +72,7 @@ CartesianPeriodic <- function(dsLinear, dsPeriodic,
                               changeLineAlpha=.5, changeLineSize=3,
                               title=NULL, xTitle=NULL, yTitle=NULL ) {
   
-  stages <- sort(unique(dsLinear[, stageIDName]))
+  stages <- base::sort(base::unique(dsLinear[, stageIDName]))
   stageCount <- length(stages)
   testit::assert("The number of unique `StageID` values should be 1 greater than the number of `changePoints`.", stageCount==1+length(changePoints))
   if( !is.null(changePoints) ) testit::assert("The number of `changePoints` should equal the number of `changeLabels`.", length(changePoints)==length(changePointLabels))
