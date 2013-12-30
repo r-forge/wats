@@ -6,14 +6,16 @@ PolarPeriodic(dsLinear, dsStageCyclePolar, xName, yName, stageIDName,
   periodicLowerName = "PositionLower", periodicUpperName = "PositionUpper",
   paletteDark = NULL, paletteLight = NULL, changePoints = NULL,
   changePointLabels = NULL, drawObservedLine = TRUE,
-  drawPeriodicBand = TRUE, jaggedPointSize = 2, jaggedLineSize = 0.5,
+  drawPeriodicBand = TRUE, drawStageLabels = FALSE,
+  drawRadiusLabels = FALSE, jaggedPointSize = 2, jaggedLineSize = 1,
   bandAlphaDark = 0.4, bandAlphaLight = 0.15, colorLabels = "gray50",
-  colorGridlines = "gray80", changeLineAlpha = 0.5, changeLineSize = 3,
+  colorGridlines = "gray80", labelColor = "orange3",
+  changeLineAlpha = 0.5, changeLineSize = 3,
   tickLocations = base::pretty(x = dsLinear[, yName]),
   graphFloor = min(tickLocations), graphCeiling = max(tickLocations),
-  cardinalLabels = NULL,
-  originLabel = paste("A point at the origin represents a value of",
-  graphFloor))
+  cardinalLabels = NULL, originLabel = paste0("The origin represents ",
+  graphFloor, ";\\nthe perimeter represents ", graphCeiling, "."),
+  plotMargins = c(3.5, 2, 0.5, 2))
 }
 \arguments{
   \item{dsLinear}{The \code{data.frame} to containing the
@@ -62,12 +64,20 @@ PolarPeriodic(dsLinear, dsStageCyclePolar, xName, yName, stageIDName,
 
   \item{drawObservedLine}{A boolean value indicating if the
   longitudinal observed line should be plotted (whose
-  values are take from \code{dsLinear}.}
+  values are take from \code{dsLinear}).}
 
   \item{drawPeriodicBand}{A boolean value indicating if the
   bands should be plotted (whose values are take from the
   \code{periodicLowerName} and \code{periodicUpperName}
-  fields.}
+  fields).}
+
+  \item{drawStageLabels}{A boolean value indicating if the
+  stage labels should be plotted (whose values are take
+  from \code{dsLinear}).}
+
+  \item{drawRadiusLabels}{A boolean value indicating if the
+  gridline/radius labels should be plotted (whose values
+  are take from \code{tickLocations}).}
 
   \item{jaggedPointSize}{The size of the observed data
   points.}
@@ -89,6 +99,9 @@ PolarPeriodic(dsLinear, dsStageCyclePolar, xName, yName, stageIDName,
 
   \item{colorGridlines}{The color for the gridlines.}
 
+  \item{labelColor}{The color of the text labels imposed on
+  the line.}
+
   \item{changeLineSize}{The width of a line marking an
   interruption.}
 
@@ -107,6 +120,10 @@ PolarPeriodic(dsLinear, dsStageCyclePolar, xName, yName, stageIDName,
   \item{originLabel}{Explains what the criterion variable's
   value is at the origin.  Use \code{NULL} if no
   explanation is desired.}
+
+  \item{plotMargins}{A vector of four \code{numeric}
+  values, specifying the number of lines in the bottom,
+  left, top and right margins.}
 }
 \value{
 Returns a \code{grid} graphical object (ie, a
@@ -117,7 +134,55 @@ Shows the interrupted time series in Cartesian coordinates
 and its a periodic/cyclic components.
 }
 \examples{
-32+7854
+require(grid)
+require(Wats)
+dsLinear <- CountyMonthBirthRate2005Version
+dsLinear <- dsLinear[dsLinear$CountyName=="oklahoma", ]
+dsLinear <- AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
+
+hSpread <- function( scores ) { return( quantile(x=scores, probs=c(.25, .75)) ) }
+portfolio <- AnnotateData(
+  dsLinear = dsLinear,
+  dvName = "BirthRate",
+  centerFunction = median,
+  spreadFunction = hSpread
+)
+rm(dsLinear)
+
+polarized <- PolarizeCartesian(
+  portfolio$dsLinear,
+  portfolio$dsStageCycle,
+  yName = "BirthRate",
+  stageIDName = "StageID"
+)
+
+grid.newpage()
+PolarPeriodic(
+  dsLinear = polarized$dsObservedPolar,
+  dsStageCyclePolar = polarized$dsStageCyclePolar,
+  yName = "Radius",
+  stageIDName = "StageID",
+  cardinalLabels = c("Jan1", "Apr1", "July1", "Oct1")
+)
+
+grid.newpage()
+PolarPeriodic(
+  dsLinear = polarized$dsObservedPolar,
+  dsStageCyclePolar = polarized$dsStageCyclePolar,
+  yName = "Radius",
+  stageIDName = "StageID",
+  drawPeriodicBand = FALSE
+)
+
+grid.newpage()
+PolarPeriodic(
+  dsLinear = polarized$dsObservedPolar,
+  dsStageCyclePolar = polarized$dsStageCyclePolar,
+  yName = "Radius",
+  stageIDName = "StageID",
+  drawObservedLine = FALSE,
+  cardinalLabels = c("Jan1", "Apr1", "July1", "Oct1")
+)
 }
 \keyword{polar}
 

@@ -22,7 +22,37 @@
 ##' @return Returns a \code{data.frame}.
 ##' @keywords polar
 ##' @examples
-##' 532 + 9/78
+##' require(Wats)
+##' dsLinear <- CountyMonthBirthRate2005Version
+##' dsLinear <- dsLinear[dsLinear$CountyName=="oklahoma", ]
+##' dsLinear <- AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
+##' 
+##' hSpread <- function( scores ) { return( quantile(x=scores, probs=c(.25, .75)) ) }
+##' portfolio <- AnnotateData(
+##'   dsLinear = dsLinear, 
+##'   dvName = "BirthRate", 
+##'   centerFunction = median, 
+##'   spreadFunction = hSpread
+##' )
+##' rm(dsLinear)
+##' 
+##' polarized <- PolarizeCartesian(
+##'   dsLinear = portfolio$dsLinear, 
+##'   dsStageCycle = portfolio$dsStageCycle, 
+##'   yName = "BirthRate", 
+##'   stageIDName = "StageID"
+##' )
+##' 
+##' require(ggplot2)
+##' ggplot(polarized$dsStageCyclePolar, aes(color=factor(StageID))) + 
+##'   geom_path(aes(x=PolarLowerX, y=PolarLowerY), linetype=2) +
+##'   geom_path(aes(x=PolarCenterX, y=PolarCenterY), size=2) +
+##'   geom_path(aes(x=PolarUpperX, y=PolarUpperY), linetype=2) +
+##'   geom_path(aes(x=ObservedX, y=ObservedY), data=polarized$dsObservedPolar) +
+##'   coord_fixed(ratio=1) +
+##'   guides(color=FALSE)
+
+#For a more polished graph, see PolarPeriodic().
 
 PolarizeCartesian <- function(dsLinear, dsStageCycle,
                       yName, stageIDName, 
@@ -44,13 +74,16 @@ PolarizeCartesian <- function(dsLinear, dsStageCycle,
     return( d )
   }
   interpolateObserved <- function( d, pointsPerCycleCount ) {
-    observed <- stats::approx(x=d[, cycleTallyName] + d[, proportionThroughCycleName], y=d[, yName], n=pointsPerCycleCount)
+    observed <- stats::approx(x = d[, cycleTallyName] + d[, proportionThroughCycleName], 
+                              y = d[, yName], 
+                              n = pointsPerCycleCount)
+    stageProgress <- stats::approx(x = unique(d[, stageIDName]) + 0:1, 
+                                   n = pointsPerCycleCount + 1)
     
     base::data.frame(
       ObservedX = observed$x,
-      ObservedY = observed$y
-#       ObservedX = d[, cycleTallyName] + d[, proportionThroughCycleName],
-#       ObservedY = d[, yName]
+      ObservedY = observed$y,
+      StageProgress = stageProgress$y[seq_len(pointsPerCycleCount)] #Which chops off the last value.
     )   
   }
   interpolateBand <- function( d, pointsPerCycleCount ) {
@@ -68,21 +101,48 @@ PolarizeCartesian <- function(dsLinear, dsStageCycle,
     )   
   }
   polarizeObserved <- function( d, graphFloor=graphFloor ) {
+    #After R 3.1.0 has been out for a while, consider using sinpi()`.
+    if( nrow(d)==0 ) {
+      stageStart <- logical(0)
+      stageEnd <- logical(0)
+    } else {
+      stageStart <- c(TRUE, rep(FALSE, times=nrow(d)-1))
+      stageEnd <- c(rep(FALSE, times=nrow(d)-1), TRUE)
+    }
     base::data.frame(
-      ObservedX = (d$ObservedY - graphFloor) * sinpi(2 * d$ObservedX),
-      ObservedY = (d$ObservedY - graphFloor) * cospi(2 * d$ObservedX),
+      ObservedX = (d$ObservedY - graphFloor) * sin(2 * pi * d$ObservedX),
+      ObservedY = (d$ObservedY - graphFloor) * cos(2 * pi * d$ObservedX),
       Theta = pi * 2 * d$ObservedX,
-      Radius = d$ObservedY
+      Radius = d$ObservedY,
+      StageProgress = d$StageProgress,
+      StageStart = stageStart,
+      StageEnd = stageEnd,
+      LabelStageStart = ifelse(stageStart, paste0(d$StageID, "S"), ""),
+      LabelStageEnd = ifelse(stageEnd, paste0(d$StageID, "E"), ""),
+      stringsAsFactors = FALSE      
     )
   }
   polarizeBand <- function( d, graphFloor=graphFloor ) {
+    if( nrow(d)==0 ) {
+      stageStart <- logical(0)
+      stageEnd <- logical(0)
+    } else {
+      stageStart <- c(TRUE, rep(FALSE, times=nrow(d)-1))
+      stageEnd <- c(rep(FALSE, times=nrow(d)-1), TRUE)
+    }
     base::data.frame(
-      PolarLowerX = (d$LowerY - graphFloor) * sinpi(2 * d$LowerX),
-      PolarLowerY = (d$LowerY - graphFloor) * cospi(2 * d$LowerX),  
-      PolarCenterX = (d$CenterY - graphFloor) * sinpi(2 * d$CenterX),
-      PolarCenterY = (d$CenterY - graphFloor) * cospi(2 * d$CenterX) ,  
-      PolarUpperX = (d$UpperY - graphFloor) * sinpi(2 * d$UpperX),
-      PolarUpperY = (d$UpperY - graphFloor) * cospi(2 * d$UpperX)  
+      PolarLowerX = (d$LowerY - graphFloor) * sin(2 * pi * d$LowerX),
+      PolarLowerY = (d$LowerY - graphFloor) * cos(2 * pi * d$LowerX),  
+      PolarCenterX = (d$CenterY - graphFloor) * sin(2 * pi * d$CenterX),
+      PolarCenterY = (d$CenterY - graphFloor) * cos(2 * pi * d$CenterX),  
+      PolarUpperX = (d$UpperY - graphFloor) * sin(2 * pi * d$UpperX),
+      PolarUpperY = (d$UpperY - graphFloor) * cos(2 * pi * d$UpperX),
+#       StageProgress = d$StageProgress,
+      StageStart = stageStart,
+      StageEnd = stageEnd,
+      LabelStageStart = ifelse(stageStart, paste0(d$StageID, "S"), ""),
+      LabelStageEnd = ifelse(stageEnd, paste0(d$StageID, "E"), ""),
+      stringsAsFactors = FALSE
     )
   }
   
@@ -93,35 +153,27 @@ PolarizeCartesian <- function(dsLinear, dsStageCycle,
   dsStageCycleInterpolated <- plyr::ddply(dsStageCycleClosed, .variables=stageIDName, .fun=interpolateBand, pointsPerCycleCount=plottedPointCountPerCycle)
   dsStageCyclePolar <- plyr::ddply(dsStageCycleInterpolated, .variables=stageIDName, .fun=polarizeBand, graphFloor=graphFloor)
   
-  
   return( list(dsObservedPolar=dsObservedPolar, dsStageCyclePolar=dsStageCyclePolar) )
 }
 
-# filePathOutcomes <- file.path(devtools::inst(name="Wats"), "extdata", "BirthRatesOk.txt")
-# dsLinear <- read.table(file=filePathOutcomes, header=TRUE, sep="\t", stringsAsFactors=F)
-# dsLinear$Date <- as.Date(dsLinear$Date) 
-# dsLinear$MonthID <- NULL
-# changeMonth <- as.Date("1996-02-15")
-# dsLinear$StageID <- ifelse(dsLinear$Date < changeMonth, 1L, 2L)
-# dsLinear <- Wats::AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
+# require(Wats)
+# dsLinear <- CountyMonthBirthRate2005Version
+# dsLinear <- dsLinear[dsLinear$CountyName=="oklahoma", ]
+# dsLinear <- AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
 # 
-# hSpread <- function( scores) { return( quantile(x=scores, probs=c(.25, .75)) ) }
-# portfolio <- Wats::AnnotateData(dsLinear, dvName="BirthRate", centerFunction=median, spreadFunction=hSpread)
-# 
+# hSpread <- function( scores ) { return( quantile(x=scores, probs=c(.25, .75)) ) }
+# portfolio <- AnnotateData(dsLinear, dvName="BirthRate", centerFunction=median, spreadFunction=hSpread)
 # rm(dsLinear)
-# polarized <- PolarizeCartesian(portfolio$dsLinear, portfolio$dsStageCycle, yName="BirthRate", stageIDName="StageID")
-# dsStageCyclePolar <- polarized$dsStageCyclePolar
-# dsObservedPolar <- polarized$dsObservedPolar
 # 
-# ggplot2::ggplot(dsStageCyclePolar, ggplot2::aes(color=factor(StageID))) + 
-#   ggplot2::geom_path(ggplot2::aes(x=PolarLowerX, y=PolarLowerY)) + #ggplot2::geom_point(ggplot2::aes(x=PolarLowerX, y=PolarLowerY)) + 
-#   ggplot2::geom_path(ggplot2::aes(x=PolarCenterX, y=PolarCenterY)) + #ggplot2::geom_point(ggplot2::aes(x=PolarCenterX, y=PolarCenterY)) + 
-#   ggplot2::geom_path(ggplot2::aes(x=PolarUpperX, y=PolarUpperY)) + #ggplot2::geom_point(ggplot2::aes(x=PolarUpperX, y=PolarUpperY)) + 
-#   ggplot2::geom_path(ggplot2::aes(x=ObservedX, y=ObservedY), data=dsObservedPolar, size=2) + #ggplot2::geom_point(ggplot2::aes(x=PolarUpperX, y=PolarUpperY)) + 
-#   ggthemes::scale_color_tableau() +
-#   ggplot2::coord_fixed(ratio=1) +
-#   ggplot2::guides(color=FALSE) +
-#   ggthemes::theme_solarized_2(light=FALSE)
-
-
-
+# polarized <- PolarizeCartesian(portfolio$dsLinear, portfolio$dsStageCycle, yName="BirthRate", stageIDName="StageID")
+# 
+# require(ggplot2)
+# ggplot(polarized$dsStageCyclePolar, aes(color=factor(StageID))) + 
+#   geom_path(aes(x=PolarLowerX, y=PolarLowerY), linetype=2) +
+#   geom_path(aes(x=PolarCenterX, y=PolarCenterY), size=2) +
+#   geom_path(aes(x=PolarUpperX, y=PolarUpperY), linetype=2) +
+#   geom_path(aes(x=ObservedX, y=ObservedY), data=polarized$dsObservedPolar) +
+#   coord_fixed(ratio=1) +
+#   guides(color=FALSE)
+# 
+# #For a more polished graph, see PolarPeriodic().
