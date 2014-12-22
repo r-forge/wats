@@ -2,6 +2,7 @@
 %\VignetteEngine{knitr::knitr}
 %\VignetteIndexEntry{Figures for the MBR Manuscript}
 -->
+<!-- rmarkdown v1 -->
 
 # Figures for the MBR Manuscript
 This vignette produces the graphs included in the initial MBR manuscript.
@@ -31,10 +32,12 @@ knitr::opts_chunk$set(
     fig.height=1.6, 
     out.width="600px", #This affects only the markdown, not the underlying png file.  The height will be scaled appropriately.
     fig.path='figure_mbr_rmd/',
+    # dev = "pdf", #Uncomment to produce vector graphics for publication; however png (the default) works better within html (ie, the format of this vignette).
     dpi=400
 )
 
 base::options(width=120) #So the output is 50% wider than the default.
+pdf.options(useDingbats = FALSE) #Otherwise, the circles don't get plotted correctly in some graphs
 if( base::Sys.info()["sysname"] == "Windows" )
   grDevices::windows.options(antialias = "cleartype")
 ```
@@ -60,13 +63,13 @@ hSpread <- function( scores ) {
   return( stats::quantile(x=scores, probs=c(.25, .75)) ) 
 }
 seSpread <- function( scores ) { 
-  return( base::mean(scores) + base::c(-1, 1) * stats::sd(scores) / base::sqrt(base::length(scores)) ) 
+  return( base::mean(scores) + base::c(-1, 1) * stats::sd(scores) / base::sqrt(base::sum(!base::is.na(scores))) ) 
 }
-bootSpread <- function( scores, conf=.66 ) {
+bootSpread <- function( scores, conf=.68 ) {
   plugin <- function( d, i ) { base::mean(d[i]) }
 
-  dist <- boot::boot(data=scores, plugin, R=99) #999 for the publication
-  ci <- boot::boot.ci(dist, type = c("bca"), conf=conf)
+  distribution <- boot::boot(data=scores, plugin, R=99) #999 for the publication
+  ci <- boot::boot.ci(distribution, type = c("bca"), conf=conf)
   return( ci$bca[4:5] ) #The fourth & fifth elements correspond to the lower & upper bound.
 }
 
@@ -155,6 +158,7 @@ bottomPanel <- Wats::CartesianRolling(
   changePoints = changeMonth, 
   yTitle = "General Fertility Rate", 
   changePointLabels = "", 
+#   drawRollingBand = FALSE, 
   drawJaggedLine = FALSE
 )
 

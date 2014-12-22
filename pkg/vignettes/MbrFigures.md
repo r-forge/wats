@@ -7,40 +7,9 @@
 # Figures for the MBR Manuscript
 This vignette produces the graphs included in the initial MBR manuscript.
 
-```{r set_root_directory, echo=FALSE, results='hide'} 
-#It works better if the root directory is set in its own chunk.
-# library(knitr)
-# knitr::opts_knit$set(root.dir = "../")
-```
 
-```{r set_options, echo=FALSE, results='hide'}
-library(base)
-library(utils)
-library(stats)
-library(grDevices)
-library(grid)
-library(plyr) 
-library(scales)
-library(ggplot2) 
-library(boot) 
-library(Wats)
 
-knitr::opts_chunk$set(
-    comment=NA, 
-    tidy=FALSE,
-    fig.width=6.5, 
-    fig.height=1.6, 
-    out.width="600px", #This affects only the markdown, not the underlying png file.  The height will be scaled appropriately.
-    fig.path='figure_mbr_rmd/',
-    # dev = "pdf", #Uncomment to produce vector graphics for publication; however png (the default) works better within html (ie, the format of this vignette).
-    dpi=400
-)
 
-base::options(width=120) #So the output is 50% wider than the default.
-pdf.options(useDingbats = FALSE) #Otherwise, the circles don't get plotted correctly in some graphs
-if( base::Sys.info()["sysname"] == "Windows" )
-  grDevices::windows.options(antialias = "cleartype")
-```
 ## Figure 1: Cartesian Rolling - 2005 Version
 Figure 1:  Raw monthly birth rates (General Fertility Rates;  GFR's) for Oklahoma County, 1990-1999, plotted in a linear plot;  the "bombing effect" is located ten months after the Oklahoma City bombing.
 
@@ -51,7 +20,8 @@ Smoothed monthly birth rates (General Fertility Rates; GFRs) for Oklahoma County
 
 First, some R packages are loaded, and some variables and functions are defined.
 
-```{r Definitions}
+
+```r
 changeMonth <- base::as.Date("1996-02-15") #as.Date("1995-04-19") + lubridate::weeks(39) = "1996-01-17"
 
 vpLayout <- function(x, y) { grid::viewport(layout.pos.row=x, layout.pos.col=y) }
@@ -99,7 +69,8 @@ xScaleBlank  <- ggplot2::scale_x_date(breaks=dateSequence, labels=NULL) #This ke
 ### Individual Components
 Here is the basic linear rolling graph.  It doesn't require much specification, and will work with a wide range of approriate datasets.  This first (unpublished) graph displays all components.
 
-```{r Figure2IndividualBasic}
+
+```r
 # dsLinearAll <- utils::read.csv("./Datasets/CountyMonthBirthRate2005Version.csv", stringsAsFactors=FALSE)
 # dsLinearAll$Date <- base::as.Date(dsLinearAll$Date)
 # dsLinearOkc <- dsLinearAll[dsLinearAll$CountyName=="oklahoma", ] 
@@ -123,9 +94,16 @@ Wats::CartesianRolling(
 )
 ```
 
+```
+Warning: Removed 11 rows containing missing values (geom_path).
+```
+
+<img src="figure_mbr_rmd/Figure2IndividualBasic-1.png" title="plot of chunk Figure2IndividualBasic" alt="plot of chunk Figure2IndividualBasic" width="600px" />
+
 The version for the manuscript was tweaked to take advantage of certain features of the dataset.  This is what it looks like when all three stylized panels are combined.
 
-```{r Figure2Stylized, fig.height=4.8}  
+
+```r
 topPanel <- Wats::CartesianRolling(
   dsLinear = portfolioCartesian$dsLinear, 
   xName = "Date", 
@@ -170,14 +148,31 @@ grid::grid.newpage()
 grid::pushViewport(grid::viewport(layout=grid::grid.layout(3,1)))
 print(topPanel, vp=vpLayout(1, 1))
 print(middlePanel, vp=vpLayout(2, 1))
+```
+
+```
+Warning: Removed 11 rows containing missing values (geom_path).
+```
+
+```r
 print(bottomPanel, vp=vpLayout(3, 1))
+```
+
+```
+Warning: Removed 11 rows containing missing values (geom_path).
+```
+
+```r
 grid::popViewport()
 ```
+
+<img src="figure_mbr_rmd/Figure2Stylized-1.png" title="plot of chunk Figure2Stylized" alt="plot of chunk Figure2Stylized" width="600px" />
 
 ## Figure 4: Carteisan Periodic 
 Carteisan plot of the GFR time series data in Oklahoma County, with H-spread Bands superimposed.
 
-```{r Figure4Basic}
+
+```r
 cartesianPeriodic <- Wats::CartesianPeriodic(
   portfolioCartesian$dsLinear, 
   portfolioCartesian$dsPeriodic, 
@@ -191,15 +186,21 @@ cartesianPeriodic <- Wats::CartesianPeriodic(
 )
 print(cartesianPeriodic)
 ```
-```{r Figure4Stylized}
+
+<img src="figure_mbr_rmd/Figure4Basic-1.png" title="plot of chunk Figure4Basic" alt="plot of chunk Figure4Basic" width="600px" />
+
+```r
 cartesianPeriodic <- cartesianPeriodic + xScale + darkTheme 
 print(cartesianPeriodic)
 ```
 
+<img src="figure_mbr_rmd/Figure4Stylized-1.png" title="plot of chunk Figure4Stylized" alt="plot of chunk Figure4Stylized" width="600px" />
+
 ## Figure 5: Polar Periodic
 Wrap Around Time Series (WATS Plot) of the Oklahoma City GFR data, 1990-1999
 
-```{r Figure5, fig.height=3, fig.width=3, out.width="300px"}
+
+```r
 portfolioPolar <- Wats::PolarizeCartesian( 
   dsLinear = portfolioCartesian$dsLinear, 
   dsStageCycle = portfolioCartesian$dsStageCycle, 
@@ -219,12 +220,14 @@ Wats::PolarPeriodic(
   drawRadiusLabels = TRUE, 
   cardinalLabels = c("Jan1", "Apr1", "July1", "Oct1")
 )
-
 ```
+
+<img src="figure_mbr_rmd/Figure5-1.png" title="plot of chunk Figure5" alt="plot of chunk Figure5" width="300px" />
 ## Figure 6: WATS and Cartesian
 Wrap Around Time Series (WATS Plot) of the Oklahoma City GFR data, 1990-1999
 
-```{r Figure6, fig.height=6.5*2/3}
+
+```r
 portfolioPolar <- Wats::PolarizeCartesian(
   dsLinear = portfolioCartesian$dsLinear, 
   dsStageCycle = portfolioCartesian$dsStageCycle, 
@@ -273,16 +276,36 @@ print(cartesianPeriodic, vp=vpLayout(x=1:2, y=2)) #Print across both columns of 
 grid::upViewport()
 ```
 
+<img src="figure_mbr_rmd/Figure6-1.png" title="plot of chunk Figure6" alt="plot of chunk Figure6" width="600px" />
+
 ## Figure 7: County Comparison
 This figure compares Oklahoma County against the (other) largest urban counties.
 
-```{r Figure7, fig.height=6.5}
+
+```r
 # dsLinearAll <- Wats::AugmentYearDataWithMonthResolution(dsLinear=CountyMonthBirthRate2005Version, dateName="Date")
 
 #Identify the average size of the fecund population
 plyr::ddply(dsLinearAll, "CountyName", plyr::summarize, Mean=base::mean(FecundPopulation))
+```
 
+```
+     CountyName       Mean
+1      canadian  18332.596
+2     cleveland  48865.271
+3      comanche  26268.104
+4         creek  13402.358
+5         logan   7065.562
+6       mcclain   5434.525
+7      oklahoma 146882.529
+8         osage   8529.625
+9  pottawatomie  13604.321
+10       rogers  13383.292
+11        tulsa 123783.479
+12      wagoner  11579.967
+```
 
+```r
 GraphRowComparison <- function( rowLabel="", countyName="oklahoma", spreadFunction=hSpread, changeMonth=as.Date("1996-02-15") ) {
   dsLinear <- dsLinearAll[dsLinearAll$CountyName==countyName, ]
   dsLinear <- Wats::AugmentYearDataWithMonthResolution(dsLinear=dsLinear, dateName="Date")
@@ -322,9 +345,12 @@ for( i in base::seq_along(counties) ) {
 grid::popViewport()
 ```
 
+<img src="figure_mbr_rmd/Figure7-1.png" title="plot of chunk Figure7" alt="plot of chunk Figure7" width="600px" />
+
 Here are all 12 counties that Ronnie colelcted birth records for.  This extended graph is not in the mauscript.
 
-```{r Figure7AllCounties, fig.height=6.5 * 12/5}
+
+```r
 counties <- base::sort(base::unique(dsLinearAll$CountyName))
 countyNames <- c("Canadian", "Cleveland", "Comanche", "Creek", "Logan", "McClain", "Oklahoma", "Osage", "Pottawatomie", "Rogers", "Tulsa", "Wagoner")
 
@@ -338,10 +364,13 @@ for( i in base::seq_along(counties) ) {
 grid::popViewport()
 ```
 
+<img src="figure_mbr_rmd/Figure7AllCounties-1.png" title="plot of chunk Figure7AllCounties" alt="plot of chunk Figure7AllCounties" width="600px" />
+
 ## Figure 8: Error Band Comparison
 This figure demonstrates that WATS accommodates many types of error bands.
 
-```{r Figure8, fig.height=6.5 * 4/5}
+
+```r
 spreads <- c("hSpread", "fullSpread", "seSpread", "bootSpread")
 spreadNames <- c("H-Spread", "Range", "+/-1 SE", "Bootstrap")
 grid::grid.newpage()
@@ -354,10 +383,33 @@ for( i in base::seq_along(spreads) ) {
 grid::upViewport()
 ```
 
+<img src="figure_mbr_rmd/Figure8-1.png" title="plot of chunk Figure8" alt="plot of chunk Figure8" width="600px" />
+
 ## Session Info
 The current vignette was build on a system using the following software.
 
-```{r session_info, echo=FALSE}
-base::cat("Report created by", base::Sys.info()["user"], "at", base::strftime(base::Sys.time(), "%c, %z"))
-utils::sessionInfo()
+
+```
+Report created by Will at Mon Oct 27 13:50:19 2014, -0500
+```
+
+```
+R version 3.1.2 RC (2014-10-25 r66870)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+
+locale:
+[1] LC_COLLATE=English_United States.1252  LC_CTYPE=English_United States.1252    LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                           LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] Wats_0.9-4    boot_1.3-13   ggplot2_1.0.0 scales_0.2.4  plyr_1.8.1    knitr_1.7    
+
+loaded via a namespace (and not attached):
+ [1] colorspace_1.2-4   digest_0.6.4       evaluate_0.5.5     formatR_1.0        gtable_0.1.2       labeling_0.3      
+ [7] lattice_0.20-29    lubridate_1.3.3    MASS_7.3-35        memoise_0.2.1      munsell_0.4.2      proto_0.3-10      
+[13] RColorBrewer_1.0-5 Rcpp_0.11.3        reshape2_1.4       stringr_0.6.2      testit_0.3         tools_3.1.2       
+[19] zoo_1.7-11        
 ```
